@@ -1,4 +1,9 @@
-
+- task: prisma-cloud-compute-scan@3
+  inputs:
+    scanType: 'images'
+    twistlockService: 'Prisma Cloud Compute ITX'
+    artifact: 'nginx:latest'
+    project: 'Central Console'
 trigger:
 - main
 
