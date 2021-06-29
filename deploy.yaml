@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: evilpetclinic
+  name: evilpetclinic
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: evilpetclinic
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: evilpetclinic
+    spec:
+      containers:
+      - image: rbenavente/evilpetclinic:latest
+        name: evilpetclinic
+        resources: {}
+      imagePullSecrets:
+      - name: regcred
+status: {}

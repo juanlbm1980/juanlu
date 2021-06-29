@@ -1,0 +1,63 @@
+node {
+
+stage('Clone repository') {
+ checkout scm       
+
+ }
+   
+stage('Download latest twistcli') {
+            withCredentials([usernamePassword(credentialsId: 'twistlock_creds', passwordVariable: 'TL_PASS', usernameVariable: 'TL_USER')]) {
+            sh 'curl -k -u $TL_USER:$TL_PASS --output ./twistcli https://$TL_CONSOLE/api/v1/util/twistcli'
+            sh 'sudo chmod a+x ./twistcli'
+        }
+ }
+
+
+stage('Check image Git dependencies with twistcli') {
+   echo 'twistcli  scanning'
+     withCredentials([usernamePassword(credentialsId: 'twistlock_creds', passwordVariable: 'TL_PASS', usernameVariable: 'TL_USER')]) {
+     sh "./twistcli coderepo scan --u $TL_USER --p $TL_PASS --address https://$TL_CONSOLE  . --repository evilpetclinic --details "
+                 }
+    echo 'after  scanning'
+       
+        }
+      
+ stage('Check image Git dependencies wiht jenkins plugin') {
+    try {
+      echo 'before plugin  scanning'
+     withCredentials([usernamePassword(credentialsId: 'twistlock_creds', passwordVariable: 'TL_PASS', usernameVariable: 'TL_USER')]) {
+     prismaCloudScanCode excludedPaths: '', explicitFiles: '', logLevel: 'debug', pythonVersion: '', repositoryName: 'evil.petclinic', repositoryPath: '.', resultsFile: 'prisma-cloud-scan-results.json'
+      }         
+     echo 'after  scanning'
+       
+     } finally {
+       prismaCloudPublish resultsFilePattern: 'prisma-cloud-scan-results.json'
+        }
+    
+ } 
+ stage('Scan image with twistcli') {
+   sh 'docker pull rbenavente/evilpetclinic:latest'  
+   withCredentials([usernamePassword(credentialsId: 'twistlock_creds', passwordVariable: 'TL_PASS', usernameVariable: 'TL_USER')]) {
+   sh "./twistcli images scan --u $TL_USER --p $TL_PASS --address https://$TL_CONSOLE --details rbenavente/evilpetclinic:latest --ci-results-file prisma-cloud-image-scan-results.json"
+    prismaCloudPublish resultsFilePattern: 'prisma-cloud-image-scan-results.json'
+      }      
+        }
+        
+  stage('Scan image with jenkins plugin') {
+      try {
+	    
+	    sh 'docker pull rbenavente/evilpetclinic:latest'  
+            withCredentials([usernamePassword(credentialsId: 'twistlock_creds', passwordVariable: 'TL_PASS', usernameVariable: 'TL_USER')]) {
+           	prismaCloudScanImage ca: '', cert: '', dockerAddress: 'unix:///var/run/docker.sock', ignoreImageBuildTime: true, image: 'rbenavente/evilpetclinic:latest', key: '', logLevel: 'debug', podmanPath: '', project: '', resultsFile: 'prisma-cloud-scan-results.json'
+		 
+            }
+	 } finally {
+            prismaCloudPublish resultsFilePattern: 'prisma-cloud-scan-results.json'
+       
+       }
+
+    }
+
+    }
+   
+  
